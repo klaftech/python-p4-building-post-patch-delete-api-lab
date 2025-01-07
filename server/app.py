@@ -23,12 +23,89 @@ def bakeries():
     bakeries = [bakery.to_dict() for bakery in Bakery.query.all()]
     return make_response(  bakeries,   200  )
 
-@app.route('/bakeries/<int:id>')
+@app.route('/bakeries/<int:id>', methods=['GET','PATCH','DELETE'])
 def bakery_by_id(id):
-
     bakery = Bakery.query.filter_by(id=id).first()
-    bakery_serialized = bakery.to_dict()
-    return make_response ( bakery_serialized, 200  )
+    if request.method == "GET":
+        if bakery:
+            response_body = bakery.to_dict()
+            status_code = 200
+        else:
+            response_body = {
+                "message": "Bakery not found."
+            }
+            status_code = 404
+        header = {}
+    elif request.method == "PATCH":
+        for attr in request.form:
+            setattr(bakery, attr, request.form.get(attr))
+        db.session.add(bakery)
+        db.session.commit()
+        response_body = bakery.to_dict()
+        status_code = 200
+        header = {
+            "Content-Type": 'application/json'
+        }
+    elif request.method == "DELETE":
+        db.session.delete(bakery)
+        db.session.commit()
+        response_body = {
+            "message": "Bakery has been deleted."
+        }
+        status_code = 200
+        header = {}
+    
+    return make_response (response_body, status_code, header)
+
+@app.route('/baked_goods', methods=['GET','POST','DELETE'])
+def baked_goods():
+    if request.method == "GET":
+        goods = [good.to_dict() for good in BakedGood.query.all()]
+        return make_response(goods, 200)
+    elif request.method == "POST":
+        new_good = BakedGood(
+            name = request.form.get("name"),
+            price = request.form.get("price"),
+            bakery_id = request.form.get("bakery_id"),
+        )
+        db.session.add(new_good)
+        db.session.commit()
+        good_dict = new_good.to_dict()
+        return make_response(good_dict, 201)
+
+@app.route('/baked_goods/<int:id>', methods=['GET','DELETE'])
+def baked_goods_by_id(id):
+    good = BakedGood.query.filter_by(id=id).first()
+    if request.method == "GET":
+        if good:
+            response_body = good.to_dict()
+            status_code = 200
+        else:
+            response_body = {
+                "message": "BakedGood not found."
+            }
+            status_code = 404
+        header = {}
+    elif request.method == "PATCH":
+        for attr in request.form:
+            setattr(good, attr, request.form.get(attr))
+        db.session.add(good)
+        db.session.commit()
+        response_body = good.to_dict()
+        status_code = 200
+        header = {
+            "Content-Type": 'application/json'
+        }
+    elif request.method == "DELETE":
+        db.session.delete(good)
+        db.session.commit()
+        response_body = {
+            "message": "BakedGood has been deleted."
+        }
+        status_code = 200
+        header = {}
+    
+    return make_response (response_body, status_code, header)
 
 @app.route('/baked_goods/by_price')
 def baked_goods_by_price():
